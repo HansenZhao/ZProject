@@ -99,6 +99,24 @@ classdef ParticleSTData < handle
                 aData(:,blank) = [];
             end
         end
+        
+        function set(obj,value,varargin)
+            if size(value,2) == length(varargin)
+                for m = 1:1:length(varargin)
+                    idx = ParticleSTData.str2ID(varargin{m});
+                    if idx == 0
+                        error('invalid feature name');
+                    end
+                    if idx == -1
+                        obj.cellData = value;
+                    else
+                        obj.arrayData(:,idx) = value(:,m);
+                    end
+                end
+            else
+                error('Unbalance input for pSTD');
+            end
+        end
     end
     
     methods(Static)
