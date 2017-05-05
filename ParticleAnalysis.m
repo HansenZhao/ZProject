@@ -172,22 +172,89 @@ classdef ParticleAnalysis < handle
             end
         end
         
-        function visualCell = plotTransientDir(obj,isRef,isBg,backLength)
+        function visualCell = collectiveVelDir(obj,comd,backLength,isRef)
+            if strcmp(comd,'vel')
+                isVel = 1;
+            else
+                isVel = 0;
+            end
             frames = obj.pData.getFrames();
             frames = frames((backLength+1):end);
             L = length(frames);
             visualCell = cell(L,1);
+            tDir = zeros(L,1);
+            aveV = zeros(L,1);
+            tDV = zeros(L,1);
             for m = 1:1:L
-                [ids,pos,dir,tDir] = obj.pData.getParticleDirAtTime(frames(m),isRef,backLength);
+                [ids,pos,data] = obj.pData.velocityAtTime(frames(m),backLength,isRef,1);
                 pSTD = ParticleSTData(frames(m),length(ids));
                 %id,posX,posY,colorValue,groupTag
-                pSTD.addNewList([ids,pos,dir,zeros(length(ids),1)]);
-                pSTD.addInfo(tDir);
-                %visualCell{m} = [ids,pos,dir]; % ID,X,Y,Value  
+                if isVel
+                    pSTD.addNewList([ids,pos,data./obj.deltaT,zeros(length(ids),1)]);
+                else
+                    pSTD.addNewList([ids,pos,ParticleAnalysis.vec2angle(data(:,2:3)),zeros(length(ids),1)]);
+                end             
+                tDir(m) = vec2angle(sum(data(:,2:3)));
+                aveV(m) = mean(data(:,1)./obj.deltaT);
+                tDV(m) = vec2angle(sum(data(:,2:3).*(data(:,1)./obj.deltaT))); 
+                pSTD.addInfo(tDir(1:m)); % total sum of normalized dir
+                pSTD.addInfo(aveV(1:m)); % average scalar velocity
+                pSTD.addInfo(tDV(1:m)); % total sum of vector velocity
                 visualCell{m} = pSTD;
             end
-            c = CMVController(frames,visualCell,obj.pData,[0,2*pi]);
-            c.show(isBg);
+%             c = CMVController(frames,visualCell,obj.pData,[0,2*pi]);
+%             c.show(isBg);
+        end
+        
+        function visualCell = collectiveMSD(obj,backLength,tau,k,methods)
+            frames = obj.pData.getFrames();
+            frames = frames((backLength+1):end);
+            L = length(frames);
+            visualCell = cell(L,1);
+            local_capacity = 1000;
+            local_count = 0;
+            all_msd = zeros(local_capacity,tau+1);
+            for m = 1:1:L
+                [ids,pos,msdMat] = obj.pData.msdAtTime(frames(m),backLength,tau);
+                pSTD = ParticleSTData(frames(m),length(ids));
+                %id,posX,posY,colorValue,groupTag
+                pNum = length(ids);
+                pSTD.addNewList([ids,pos,zeros(pNum,1),zeros(pNum,1)],cell(pNum,tau+1));
+                pSTD.set(msdMat,'obj');
+                visualCell{m} = pSTD;
+                if (local_count+pNum) > local_capacity
+                    all_msd = [all_msd;zeros(max(local_capacity,pNum),tau+1)];
+                    local_capacity = size(all_msd,1);
+                end
+                all_msd((local_count+1):(local_count+pNum)) = msdMat;
+                local_count = local_count + pNum;
+            end
+            all_msd = all_msd(1:local_count,:);
+            [tags,C] = kmeans(all_msd,k,'Distance',methods,'Replicates',10);
+            counter = 0;
+            for m = 1:1:L
+                pNum = visualCell{m}.count;
+                visualCell{m}.set(tags((counter+1):(counter+pNum)),'tag');
+                visualCell{m}.addInfo(C);
+                counter = counter+pNum;
+            end        
+        end
+        
+        function visualCell = collectiveAsym(obj,backLength)
+            
+        end
+        
+        
+    end
+    
+    methods(Static)
+        function v = vec2angle(vec)
+            L = size(vec,1);
+            v = zeros(L,1);
+            filter = or(vec(:,1),vec(:,2));
+            v(filter) = acos(dot(vec(filter,:),repmat([1,0],sum(filter),1),2)./sqrt(sum(vec(filter,:).^2,2)));
+            filter2 = vec(:,2)<0;
+            v(filter2) = 2*pi - v(filter2);        
         end
     end
     
