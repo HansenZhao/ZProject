@@ -7,6 +7,7 @@ classdef CMVController < handle
     
     properties(Access = private);
         pdata;
+        pAnalysis;
         frames;
         curFrameIndex
     end
@@ -17,12 +18,8 @@ classdef CMVController < handle
     end
     
     methods
-        function obj = CMVController(frames,dataCell,pdata,cLim)
-            obj.dataCell = dataCell;
-            obj.pdata = pdata;
-            obj.frames = frames;
-            obj.curFrameIndex = 1;
-            obj.cLim = cLim;
+        function obj = CMVController(pa)
+            obj.pAnalysis = pa;
         end
         function f = get.curFrame(obj)
             f = obj.frames(obj.curFrameIndex);
@@ -39,18 +36,18 @@ classdef CMVController < handle
             end
             data = obj.dataCell{obj.curFrameIndex}.get('id','posX','posY','value');
         end
-        function show(obj,isPlotBg)
-            ColorMapViewer(obj,isPlotBg,obj.cLim);
-        end
+%         function show(obj,type,isPlotBg)
+%             ColorMapViewer(obj,isPlotBg,obj.cLim);
+%         end
         function res = getCurFramePData(obj)
             ids = obj.dataCell{obj.curFrameIndex}.get('id');
             res = [];
             for id = ids'               
-                res = [res;obj.pdata.getParticle(id)];
+                res = [res;obj.pAnalysis.pData.getParticle(id)];
             end
         end
         function pdata = getPData(obj)
-            pdata = obj.pdata.getParticle();
+            pdata = obj.pAnalysis.pData.getParticle();
         end
         function setCurFrameIndex(obj,frameIndex)
             obj.curFrameIndex = frameIndex;
@@ -67,8 +64,35 @@ classdef CMVController < handle
         function info = getCurInfo(obj)
             info = obj.dataCell{obj.curFrameIndex}.addtionInfo;
         end
+        function askForData(obj,type,param)
+            switch type
+                case CBDataType.NetDirection
+                    [obj.dataCell,obj.frames] = obj.pAnalysis.collectiveVelDir(...
+                                                 '',param.backLength,param.isRef);
+                    obj.cLim = [0,2 * pi];
+                    obj.curFrameIndex = 1;
+                case CBDataType.NetVelocity
+                    [obj.dataCell,obj.frames] = obj.pAnalysis.collectiveVelDir(...
+                                                 'vel',param.backLength,param.isRef);
+                    obj.cLim = [];
+                    obj.curFrameIndex = 1;
+            end
+            obj.calCLim();
+        end
     end
     
+    methods(Access=private)
+        function calCLim(obj)
+            tmp = zeros(obj.frameLength,2);
+            for m = 1:1:obj.frameLength
+                data = obj.dataCell{m}.get('value');
+                tmp(m,1) = min(data);
+                tmp(m,2) = max(data);
+            end
+            %obj.cLim = [min(tmp(:,1)),max(tmp(:,2))];
+            obj.cLim = mean(tmp);
+        end
+    end
     methods(Static)
         function flag = isInTri(pos,verts)
             o = verts(1,:);
