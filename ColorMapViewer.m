@@ -22,7 +22,7 @@ function varargout = ColorMapViewer(varargin)
 
 % Edit the above text to modify the response to help ColorMapViewer
 
-% Last Modified by GUIDE v2.5 27-Apr-2017 22:39:41
+% Last Modified by GUIDE v2.5 05-May-2017 19:52:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,9 +56,14 @@ function ColorMapViewer_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 handles.controller = varargin{1};
 handles.isPlotBg = varargin{2};
-handles.cLim = varargin{3};
 handles.isKeepRange = 0;
-scatterPoint(handles,0);
+handles.backLength = -1;
+handles.k = 1;
+handles.isRef = 0;
+handles.isShowHM = 1;
+handles.cLim = [];
+set(handles.Ed_cLim,'String','auto');
+set(handles.Rb_showHeatMap,'Value',1);
 refreshSubAxes(handles);
 set(handles.Stx_curFrame,'String',num2str(handles.controller.curFrame));
 % Update handles structure
@@ -103,10 +108,14 @@ function scatterPoint(handles,addDir)
 
     
     dataArray = handles.controller.getCurData(addDir);
-    
-    genPointHeatMap(handles.Axes_main,400,dataArray(:,2:4),3,1.5,'disk');
-    set(handles.Axes_main,'NextPlot','add');
-    scatter(handles.Axes_main,dataArray(:,2),dataArray(:,3),20,dataArray(:,4),'filled');
+    if handles.isShowHM
+        genPointHeatMap(handles.Axes_main,400,dataArray(:,2:4),3,1.5,'disk');
+        set(handles.Axes_main,'NextPlot','add');
+        scatter(handles.Axes_main,dataArray(:,2),dataArray(:,3),20,dataArray(:,4),'filled');
+    else
+        scatter(handles.Axes_main,dataArray(:,2),dataArray(:,3),20,dataArray(:,4),'filled');
+        set(handles.Axes_main,'NextPlot','add');
+    end
     
     if handles.isPlotBg
         data = handles.controller.getPData();
@@ -125,9 +134,11 @@ function scatterPoint(handles,addDir)
         set(handles.Axes_main,'YLim',handles.ylim);
     end
     set(handles.Axes_main,'Color',c);
-    colormap(hsv);
-    caxis(handles.cLim);
     colorbar(handles.Axes_main);
+    if isempty(handles.cLim)
+    else
+        caxis(handles.Axes_main,handles.cLim);
+    end
     
 function refreshSubAxes(handles)
 %     info = handles.controller.getCurInfo();
@@ -222,3 +233,252 @@ function Btn_play_Callback(hObject, eventdata, handles)
 % hObject    handle to Btn_play (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on selection change in Pop_dataType.
+function Pop_dataType_Callback(hObject, eventdata, handles)
+% hObject    handle to Pop_dataType (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Pop_dataType contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Pop_dataType
+function refreshControllerData(handles,str)
+    switch str
+        case 'Direction'
+            param = struct();
+            param.backLength = handles.backLength;
+            param.isRef = handles.isRef;
+            handles.controller.askForData(CBDataType.NetDirection,param);
+        case 'Hist Direction'
+        case 'Velocity'
+            param = struct();
+            param.backLength = handles.backLength;
+            param.isRef = handles.isRef;
+            handles.controller.askForData(CBDataType.NetVelocity,param);
+        case 'Hist Velocity'
+        case 'Asym'
+        case 'MSD'
+    end
+% --- Executes during object creation, after setting all properties.
+function Pop_dataType_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pop_dataType (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Ed_backLength_Callback(hObject, eventdata, handles)
+% hObject    handle to Ed_backLength (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.backLength = str2double(get(hObject,'String'));
+guidata(hObject,handles);
+% Hints: get(hObject,'String') returns contents of Ed_backLength as text
+%        str2double(get(hObject,'String')) returns contents of Ed_backLength as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Ed_backLength_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ed_backLength (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Rb_refDir.
+function Rb_refDir_Callback(hObject, eventdata, handles)
+% hObject    handle to Rb_refDir (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.isRef = get(hObject,'Value');
+guidata(hObject,handles);
+% Hint: get(hObject,'Value') returns toggle state of Rb_refDir
+
+
+
+function Ed_k_Callback(hObject, eventdata, handles)
+% hObject    handle to Ed_k (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.k = str2double(get(hObject,'String'));
+guidata(hOject,handles);
+% Hints: get(hObject,'String') returns contents of Ed_k as text
+%        str2double(get(hObject,'String')) returns contents of Ed_k as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Ed_k_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ed_k (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Pop_kmeansMethod.
+function Pop_kmeansMethod_Callback(hObject, eventdata, handles)
+% hObject    handle to Pop_kmeansMethod (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+contents = cellstr(get(hObject,'String'));
+handles.kmeansMethod = contents{get(hObject,'Value')};
+guidata(hObject,handles);
+% Hints: contents = cellstr(get(hObject,'String')) returns Pop_kmeansMethod contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Pop_kmeansMethod
+
+
+% --- Executes during object creation, after setting all properties.
+function Pop_kmeansMethod_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pop_kmeansMethod (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Btn_getData.
+function Btn_getData_Callback(hObject, eventdata, handles)
+% hObject    handle to Btn_getData (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+contents = cellstr(get(handles.Pop_dataType,'String'));
+refreshControllerData(handles,contents{get(handles.Pop_dataType,'Value')});
+scatterPoint(handles,0);
+set(handles.Stx_curFrame,'String',num2str(handles.controller.curFrame));
+
+function Ed_xRange_Callback(hObject, eventdata, handles)
+% hObject    handle to Ed_xRange (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Ed_xRange as text
+%        str2double(get(hObject,'String')) returns contents of Ed_xRange as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Ed_xRange_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ed_xRange (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Ed_yRange_Callback(hObject, eventdata, handles)
+% hObject    handle to Ed_yRange (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Ed_yRange as text
+%        str2double(get(hObject,'String')) returns contents of Ed_yRange as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Ed_yRange_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ed_yRange (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Pop_colorMap.
+function Pop_colorMap_Callback(hObject, eventdata, handles)
+% hObject    handle to Pop_colorMap (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+contents = cellstr(get(hObject,'String'))
+colormap(handles.Axes_main,contents{get(hObject,'Value')});
+% Hints: contents = cellstr(get(hObject,'String')) returns Pop_colorMap contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Pop_colorMap
+
+
+% --- Executes during object creation, after setting all properties.
+function Pop_colorMap_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pop_colorMap (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Rb_showHeatMap.
+function Rb_showHeatMap_Callback(hObject, eventdata, handles)
+% hObject    handle to Rb_showHeatMap (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.isShowHM = get(hObject,'Value');
+scatterPoint(handles,0);
+guidata(hObject,handles);
+% Hint: get(hObject,'Value') returns toggle state of Rb_showHeatMap
+
+
+
+function Ed_cLim_Callback(hObject, eventdata, handles)
+% hObject    handle to Ed_cLim (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+str = get(hObject,'String');
+if strcmp(str,'auto')
+    handles.cLim = [];
+else if strcmp(str,'ref')
+        handles.cLim = handles.controller.cLim;
+    else
+        try
+            str_seg = strsplit(str,' ');
+            handles.cLim = [str2num(str_seg{1}),str2num(str_seg{2})];
+        catch
+            set(hObject,'String','ERROR INPUT');
+        end
+    end
+end
+scatterPoint(handles,0);
+guidata(hObject,handles);
+% Hints: get(hObject,'String') returns contents of Ed_cLim as text
+%        str2double(get(hObject,'String')) returns contents of Ed_cLim as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Ed_cLim_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ed_cLim (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
