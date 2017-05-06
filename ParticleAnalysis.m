@@ -172,7 +172,7 @@ classdef ParticleAnalysis < handle
             end
         end
         
-        function visualCell = collectiveVelDir(obj,comd,backLength,isRef)
+        function [visualCell,frames] = collectiveVelDir(obj,comd,backLength,isRef)
             if strcmp(comd,'vel')
                 isVel = 1;
             else
@@ -186,17 +186,17 @@ classdef ParticleAnalysis < handle
             aveV = zeros(L,1);
             tDV = zeros(L,1);
             for m = 1:1:L
-                [ids,pos,data] = obj.pData.velocityAtTime(frames(m),backLength,isRef,1);
+                [ids,pos,data] = obj.pData.velocityAtFrame(frames(m),backLength,isRef,1);
                 pSTD = ParticleSTData(frames(m),length(ids));
                 %id,posX,posY,colorValue,groupTag
                 if isVel
-                    pSTD.addNewList([ids,pos,data./obj.deltaT,zeros(length(ids),1)]);
+                    pSTD.addNewList([ids,pos,data(:,1)./obj.deltaT,zeros(length(ids),1)]);
                 else
                     pSTD.addNewList([ids,pos,ParticleAnalysis.vec2angle(data(:,2:3)),zeros(length(ids),1)]);
                 end             
-                tDir(m) = vec2angle(sum(data(:,2:3)));
+                tDir(m) = ParticleAnalysis.vec2angle(sum(data(:,2:3)));
                 aveV(m) = mean(data(:,1)./obj.deltaT);
-                tDV(m) = vec2angle(sum(data(:,2:3).*(data(:,1)./obj.deltaT))); 
+                tDV(m) = ParticleAnalysis.vec2angle(sum(data(:,2:3).*(data(:,1)./obj.deltaT))); 
                 pSTD.addInfo(tDir(1:m)); % total sum of normalized dir
                 pSTD.addInfo(aveV(1:m)); % average scalar velocity
                 pSTD.addInfo(tDV(1:m)); % total sum of vector velocity
@@ -206,7 +206,7 @@ classdef ParticleAnalysis < handle
 %             c.show(isBg);
         end
         
-        function visualCell = collectiveMSD(obj,backLength,tau,k,methods)
+        function [visualCell,frames] = collectiveMSD(obj,backLength,tau,k,methods)
             frames = obj.pData.getFrames();
             frames = frames((backLength+1):end);
             L = length(frames);
@@ -240,11 +240,19 @@ classdef ParticleAnalysis < handle
             end        
         end
         
-        function visualCell = collectiveAsym(obj,backLength)
-            
+        function [visualCell,frames] = collectiveAsym(obj,backLength)
+            frames = obj.pData.getFrames();
+            frames = frames((backLength+1):end);
+            L = length(frames);
+            visualCell = cell(L,1);
+            for m = 1:1:L
+                [ids,pos,asym] = obj.pData.asymAtFrame(frames(m),backLength);
+                pSTD = ParticleSTData(frames(m),length(ids));
+                %id,posX,posY,colorValue,groupTag
+                pSTD.addNewList([ids,pos,asym,zeros(length(ids),1)]);           
+                visualCell{m} = pSTD;
+            end
         end
-        
-        
     end
     
     methods(Static)
