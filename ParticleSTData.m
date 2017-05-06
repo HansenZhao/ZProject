@@ -31,6 +31,7 @@ classdef ParticleSTData < handle
             obj.addtionInfo = {};
         end
         
+        
         function addInfo(obj,info)
             obj.addtionInfo = [obj.addtionInfo,info];
         end
