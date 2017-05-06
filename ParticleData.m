@@ -143,7 +143,7 @@ classdef ParticleData < handle
                 particle_data = obj.getParticle(ids(m)); %frame,x,y,z
                 pos(m,:) = particle_data(particle_data(:,1)==frame,2:3);
                 history_pos = particle_data(particle_data(:,1)==refFrame,2:3);
-                data(m,1) = norm(pos(m,:) - history_pos);
+                data(m,1) = norm(pos(m,:) - history_pos)/backLength; %trans to 1 step
                 if isDir
                     data(m,2:3) = (pos(m,:) - history_pos)./data(m,1);
                     if isRef
