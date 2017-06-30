@@ -76,6 +76,11 @@ classdef CMVController < handle
                                                  'vel',param.backLength,param.isRef);
                     obj.cLim = [];
                     obj.curFrameIndex = 1;
+                case CBDataType.MSD
+                    [obj.dataCell,obj.frames] = obj.pAnalysis.collectiveMSD(...
+                        param.backLength,param.tau,param.k,param.methods);
+                    obj.cLim = [1,param.k];
+                    obj.curFrameIndex = 1;
             end
             obj.calCLim();
         end
