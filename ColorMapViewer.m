@@ -62,6 +62,7 @@ handles.k = 1;
 handles.isRef = 0;
 handles.isShowHM = 1;
 handles.cLim = [];
+handles.HMtype = 'value';
 set(handles.Ed_cLim,'String','auto');
 set(handles.Rb_showHeatMap,'Value',1);
 refreshSubAxes(handles);
@@ -109,7 +110,7 @@ function scatterPoint(handles,addDir)
     
     dataArray = handles.controller.getCurData(addDir);
     if handles.isShowHM
-        genPointHeatMap(handles.Axes_main,400,dataArray(:,2:4),3,1.5,'disk');
+        genPointHeatMap(handles.Axes_main,handles.HMtype,40,dataArray(:,2:4),3,1.5,2);
         set(handles.Axes_main,'NextPlot','add');
         scatter(handles.Axes_main,dataArray(:,2),dataArray(:,3),20,dataArray(:,4),'filled');
     else
@@ -240,7 +241,22 @@ function Pop_dataType_Callback(hObject, eventdata, handles)
 % hObject    handle to Pop_dataType (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+contents = cellstr(get(hObject,'String'));
+switch contents{get(hObject,'Value')}
+    case 'Direction'
+        handles.typeHM = 'value';
+    case 'Hist Direction'
+        handles.typeHM = 'tag';
+    case 'Velocity'
+        handles.typeHM = 'value';
+    case 'Hist Velocity'
+        handles.typeHM = 'tag';
+    case 'MSD'
+        handles.typeHM = 'tag';
+    case 'Asym'
+        handles.typeHM = 'value';
+end
+guidata(hObject,handles);
 % Hints: contents = cellstr(get(hObject,'String')) returns Pop_dataType contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Pop_dataType
 function refreshControllerData(handles,str)
@@ -259,6 +275,12 @@ function refreshControllerData(handles,str)
         case 'Hist Velocity'
         case 'Asym'
         case 'MSD'
+            param = struct();
+            param.backLength = handles.backLength;
+            param.tau = floor(param.backLength/3);
+            param.k = handles.k;
+            param.methods = handles.kmeansMethod;
+            handles.controller.askForData(CBDataType.MSD,param);
     end
 % --- Executes during object creation, after setting all properties.
 function Pop_dataType_CreateFcn(hObject, eventdata, handles)
@@ -313,7 +335,7 @@ function Ed_k_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles.k = str2double(get(hObject,'String'));
-guidata(hOject,handles);
+guidata(hObject,handles);
 % Hints: get(hObject,'String') returns contents of Ed_k as text
 %        str2double(get(hObject,'String')) returns contents of Ed_k as a double
 
