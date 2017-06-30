@@ -25,8 +25,8 @@ classdef ParticleSTData < handle
             else
                 obj.capacity = varargin{1};
             end
-            obj.arrayData = zeros(obj.capacity,5);
-            obj.cellData = cell(obj.capacity,4);
+            obj.arrayData = zeros(obj.capacity,5); %id,posX,posY,value,tag
+            obj.cellData = cell(obj.capacity,1); 
             obj.particleNum = 0;
             obj.addtionInfo = {};
         end
@@ -47,7 +47,7 @@ classdef ParticleSTData < handle
         function addSingleNew(obj,varargin)
             if obj.particleNum == obj.capacity
                 obj.arrayData = [obj.arrayData;zeros(obj.capacity,5)];
-                obj.cellData = [obj.cellData;cell(obj.capacity,4)];
+                obj.cellData = [obj.cellData;cell(obj.capacity,1)];
                 obj.capacity = obj.capacity * 2;
             end
             obj.particleNum = obj.particleNum + 1;
@@ -64,12 +64,12 @@ classdef ParticleSTData < handle
             L = size(arrayData,1);
             if (obj.particleNum + L) > obj.capacity
                 obj.arrayData = [obj.arrayData;zeros(L*2,5)];
-                obj.cellData = [obj.cellData;cell(L*2,4)];
+                obj.cellData = [obj.cellData;cell(L*2,1)];
                 obj.capacity = obj.capacity + L*2;
             end
             obj.arrayData((obj.particleNum + 1):(obj.particleNum + L),:) = arrayData;
             if ~isempty(varargin)
-                obj.cellData{(obj.particleNum + 1):(obj.particleNum + L)} = varargin{1};
+                obj.cellData((obj.particleNum + 1):(obj.particleNum + L)) = varargin{1}(:);
             end
             obj.particleNum = obj.particleNum + L;
         end
