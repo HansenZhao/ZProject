@@ -193,7 +193,10 @@ classdef ParticleAnalysis < handle
                     pSTD.addNewList([ids,pos,data(:,1)./obj.deltaT,zeros(length(ids),1)]);
                 else
                     pSTD.addNewList([ids,pos,ParticleAnalysis.vec2angle(data(:,2:3)),zeros(length(ids),1)]);
-                end             
+                end 
+                if length(sum(data(:,2:3))) == 1
+                    disp('s');
+                end
                 tDir(m) = ParticleAnalysis.vec2angle(sum(data(:,2:3)));
                 aveV(m) = mean(data(:,1)./obj.deltaT);
                 tDV(m) = ParticleAnalysis.vec2angle(sum(data(:,2:3).*(data(:,1)./obj.deltaT))); 
@@ -215,18 +218,22 @@ classdef ParticleAnalysis < handle
             local_count = 0;
             all_msd = zeros(local_capacity,tau+1);
             for m = 1:1:L
-                [ids,pos,msdMat] = obj.pData.msdAtTime(frames(m),backLength,tau);
+                [ids,pos,msdMat] = obj.pData.msdAtFrame(frames(m),backLength,tau);
                 pSTD = ParticleSTData(frames(m),length(ids));
                 %id,posX,posY,colorValue,groupTag
                 pNum = length(ids);
-                pSTD.addNewList([ids,pos,zeros(pNum,1),zeros(pNum,1)],cell(pNum,tau+1));
-                pSTD.set(msdMat,'obj');
+                msdData = cell(pNum,1);
+                for n = 1:1:pNum
+                    msdData{n} = msdMat(n,:);
+                end
+                pSTD.addNewList([ids,pos,zeros(pNum,1),zeros(pNum,1)],msdData);
+                %pSTD.set(msdMat,'obj');
                 visualCell{m} = pSTD;
                 if (local_count+pNum) > local_capacity
                     all_msd = [all_msd;zeros(max(local_capacity,pNum),tau+1)];
                     local_capacity = size(all_msd,1);
                 end
-                all_msd((local_count+1):(local_count+pNum)) = msdMat;
+                all_msd((local_count+1):(local_count+pNum),:) = msdMat;
                 local_count = local_count + pNum;
             end
             all_msd = all_msd(1:local_count,:);
@@ -235,6 +242,7 @@ classdef ParticleAnalysis < handle
             for m = 1:1:L
                 pNum = visualCell{m}.count;
                 visualCell{m}.set(tags((counter+1):(counter+pNum)),'tag');
+                visualCell{m}.set(tags((counter+1):(counter+pNum)),'value');
                 visualCell{m}.addInfo(C);
                 counter = counter+pNum;
             end        
